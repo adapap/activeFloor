@@ -113,6 +113,7 @@ var Game = {
 			Game.difficulty = DIFF
 			Game.bpm = Game.song.bpm
 			Game.beat = 0
+			Game.timestamp = 0
 			Game.playing = true
 			Game.combo = 0
 			Game.fullCombo = 0
@@ -195,32 +196,33 @@ var Game = {
 
 			/* Run the clock every one-eighth beat */
 			Game.eighth = 60/Game.bpm/2*1000
-			Game.songClock = () => {
-				if (Game.beat % (8 / Math.pow(2, Game.difficulty)) == 0) {
-					if (Game.notes[Game.beat] == undefined) {
-						Game.playing = false
+			Game.songClock = (timestamp) => {
+				if (Game.timestamp == 0) { Game.timestamp = timestamp }
+				let timeDelta = timestamp - Game.timestamp
+				if (timeDelta >= Game.eighth) {
+					Game.timestamp = timestamp
+					if (Game.beat % (8 / Math.pow(2, Game.difficulty)) == 0) {
+						if (Game.notes[Game.beat] == undefined) {
+							Game.playing = false
+						}
+						for (n in Game.notes[Game.beat]) {
+							Game.notes[Game.beat][n].active = true
+							Game.notes[Game.beat][n].hit = false
+						}
 					}
-					for (n in Game.notes[Game.beat]) {
-						Game.notes[Game.beat][n].active = true
-						Game.notes[Game.beat][n].hit = false
+					if (Game.beat % 4 == 0) {
+						if (Game.health - Game.difficulty <= 0) {
+							Game.health = 0
+							Game.playing = false
+							Game.stage = 'song-over'
+						}
+						Game.health -= Game.difficulty
 					}
+					Game.beat++
 				}
-				if (Game.beat % 4 == 0) {
-					if (Game.health - Game.difficulty <= 0) {
-						Game.health = 0
-						Game.playing = false
-						Game.stage = 'song-over'
-					}
-					Game.health -= Game.difficulty
-				}
-				Game.beat++
-				if (Game.playing) {
-					setTimeout(() => {
-						requestAnimationFrame(Game.songClock)
-					}, Game.eighth)
-				}
+				requestAnimationFrame(Game.songClock)
 			}
-			Game.songClock()
+			requestAnimationFrame(Game.songClock)
 		}
 	},
 	arrows: [],
